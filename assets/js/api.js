@@ -7,7 +7,7 @@
 
 // 1) After you deploy the Apps Script as a Web App, paste its
 //    /exec URL here. Everything else in the site uses this.
-const API_URL = "https://script.google.com/macros/s/AKfycbxSKxK_T_r9SebE7dd7jKQzBqMcbWsRcu_ZxRdPzfD4Ei6xr2sPkdBFIKQNn5ueyT88/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyAsOWL9KF19yGGgO00iSngJINkTbGvAxA9JJBoSvYWeVJKIr8QKDaRAfVkX9ZtS7rc/exec";
 
 const ROTC = (() => {
 
