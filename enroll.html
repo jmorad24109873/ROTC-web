@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enroll — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .auth-page{background:var(--dark-green) url('assets/img/bg-logo.png') center 60px/620px no-repeat;}
+  .auth-card{max-width:640px;}
+</style>
+</head>
+<body>
+
+<div class="auth-page">
+  <img src="assets/img/login-logo.png" class="seal" alt="DMST seal">
+  <div class="auth-card">
+    <form id="enroll-form">
+      <div class="form-row"><label for="email">Email:</label><input type="email" id="email" required></div>
+      <div class="form-row"><label for="password">Password:</label><input type="password" id="password" required minlength="6"></div>
+      <div class="form-row"><label for="studentId">Student ID:</label><input type="text" id="studentId" required></div>
+      <div class="form-row"><label for="name">Name:</label><input type="text" id="name" required></div>
+      <div class="form-row"><label for="course">Course:</label><input type="text" id="course" required></div>
+      <div class="form-row"><label for="address">Address:</label><input type="text" id="address" required></div>
+      <div class="form-row"><label for="beneficiary">Beneficiary:</label><input type="text" id="beneficiary" required></div>
+      <div class="form-row"><label for="cp">CP#:</label><input type="text" id="cp" required></div>
+      <div class="form-msg" id="msg"></div>
+      <div class="auth-actions">
+        <button type="submit" class="btn btn-gold">ENROLL</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="notice-box" id="notice">
+    Wait For your<br>Account to be approved
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+document.getElementById("enroll-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  msg.textContent = "Submitting...";
+  msg.className = "form-msg";
+
+  const payload = {
+    email: document.getElementById("email").value.trim(),
+    password: document.getElementById("password").value,
+    studentId: document.getElementById("studentId").value.trim(),
+    name: document.getElementById("name").value.trim(),
+    course: document.getElementById("course").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    beneficiary: document.getElementById("beneficiary").value.trim(),
+    cp: document.getElementById("cp").value.trim(),
+  };
+
+  try {
+    const result = await ROTC.enroll(payload);
+    if (result.duplicate) {
+      // "If Student enrolled again the system show 'Student Enrolled Already'"
+      msg.textContent = "Student Enrolled Already";
+      msg.className = "form-msg error";
+    } else {
+      msg.textContent = "Enrollment submitted! Wait for approval, then log in.";
+      msg.className = "form-msg ok";
+      document.getElementById("enroll-form").reset();
+    }
+  } catch (err) {
+    msg.textContent = err.message || "Something went wrong. Please try again.";
+    msg.className = "form-msg error";
+  }
+});
+</script>
+</body>
+</html>

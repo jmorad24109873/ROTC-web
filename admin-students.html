@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enrolled Students — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html" class="active"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">ENROLLED STUDENT INFORMATION</h2>
+      <p class="small-note" style="margin-bottom:10px;">
+        Note: Information in the enrollment of a student must include all fields above.
+        Grades (MS1/MS2) can be edited inline and saved.
+      </p>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table id="students-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>NAME</th><th>ADDRESS</th><th>Course</th>
+                <th>Beneficiary</th><th>CP#</th><th>Email</th><th>Status</th>
+                <th>MS1</th><th>MS2</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="students-tbody">
+              <tr><td colspan="11">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+ROTC.requireRole("admin");
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+async function load() {
+  const tbody = document.getElementById("students-tbody");
+  try {
+    const students = await ROTC.getAllStudents();
+    if (!students.length) {
+      tbody.innerHTML = "<tr><td colspan='11'>No students enrolled yet.</td></tr>";
+      return;
+    }
+    tbody.innerHTML = students.map(s => `
+      <tr data-id="${s.id}">
+        <td>${s.id}</td>
+        <td>${s.name}</td>
+        <td>${s.address || ""}</td>
+        <td>${s.course || ""}</td>
+        <td>${s.beneficiary || ""}</td>
+        <td>${s.cp || ""}</td>
+        <td>${s.email || ""}</td>
+        <td>${s.status}</td>
+        <td><input type="text" class="ms1-input" value="${s.ms1 || ""}" style="width:60px;"></td>
+        <td><input type="text" class="ms2-input" value="${s.ms2 || ""}" style="width:60px;"></td>
+        <td>
+          <div class="table-actions">
+            <button class="btn-approve" data-act="Approved">Approved</button>
+            <button class="btn-decline" data-act="Declined">Decline</button>
+            <button class="btn-delete" data-act="Delete">Delete</button>
+            <button class="btn-save" data-act="SaveGrades">Save</button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="11">${err.message}</td></tr>`;
+  }
+}
+load();
+
+document.getElementById("students-tbody").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  const row = btn.closest("tr");
+  const id = row.dataset.id;
+  const act = btn.dataset.act;
+
+  try {
+    if (act === "Delete") {
+      if (!confirm("Delete this student record?")) return;
+      await ROTC.deleteStudent({ id });
+      row.remove();
+      return;
+    }
+    if (act === "SaveGrades") {
+      const ms1 = row.querySelector(".ms1-input").value;
+      const ms2 = row.querySelector(".ms2-input").value;
+      await ROTC.updateStudentGrades({ id, ms1, ms2 });
+      alert("Grades saved.");
+      return;
+    }
+    // Approved / Declined
+    await ROTC.setStudentStatus({ id, status: act });
+    load();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+</script>
+</body>
+</html>

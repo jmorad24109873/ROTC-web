@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Home — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html" class="active"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">HOME PAGE</h2>
+
+      <div class="panel">
+        <h3>ENROLLED STUDENT INFORMATION</h3>
+        <p class="small-note">Review, approve, or edit cadet enrollment records.</p>
+        <div class="table-actions" style="justify-content:flex-end;">
+          <a href="admin-students.html" class="btn-view">VIEW/EDIT</a>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>INSTRUCTORS &amp; OFFICERS</h3>
+        <p class="small-note">Manage cadre and officer records.</p>
+        <div class="table-actions" style="justify-content:flex-end;">
+          <a href="admin-officers.html" class="btn-view">VIEW/EDIT</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+ROTC.requireRole("admin");
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+</script>
+</body>
+</html>

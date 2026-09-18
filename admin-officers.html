@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instructors &amp; Officers — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html" class="active"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">INSTRUCTORS &amp; OFFICERS</h2>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table id="officers-table">
+            <thead>
+              <tr><th>Rank</th><th>Name</th><th>CP#</th><th>Address</th><th>Role</th><th>Bank No.</th><th>Tin No.</th><th></th></tr>
+            </thead>
+            <tbody id="officers-tbody">
+              <tr><td colspan="8">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button class="btn-view" id="add-row">+ Add Row</button>
+          <button class="btn-discard" id="discard">Discard</button>
+          <button class="btn-save" id="save-all">Save Changes</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+ROTC.requireRole("admin");
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+const cols = ["rank","name","cp","address","role","bankNo","tinNo"];
+
+function rowHtml(o = {}) {
+  return `<tr>` + cols.map(c => `<td><input value="${o[c] || ""}" data-col="${c}" style="width:100%;border:none;background:transparent;"></td>`).join("") +
+    `<td><button class="btn-delete row-delete">Delete</button></td></tr>`;
+}
+
+async function load() {
+  const tbody = document.getElementById("officers-tbody");
+  try {
+    const officers = await ROTC.getOfficers();
+    tbody.innerHTML = officers.length
+      ? officers.map(rowHtml).join("")
+      : rowHtml();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="8">${err.message}</td></tr>`;
+  }
+}
+load();
+
+document.getElementById("add-row").addEventListener("click", () => {
+  document.getElementById("officers-tbody").insertAdjacentHTML("beforeend", rowHtml());
+});
+
+document.getElementById("officers-tbody").addEventListener("click", (e) => {
+  if (e.target.classList.contains("row-delete")) {
+    e.target.closest("tr").remove();
+  }
+});
+
+document.getElementById("discard").addEventListener("click", load);
+
+document.getElementById("save-all").addEventListener("click", async () => {
+  const rows = [...document.querySelectorAll("#officers-tbody tr")];
+  const officers = rows.map(row => {
+    const obj = {};
+    cols.forEach(c => obj[c] = row.querySelector(`[data-col="${c}"]`).value.trim());
+    return obj;
+  }).filter(o => o.name); // skip empty rows
+
+  try {
+    await ROTC.saveOfficers({ officers });
+    alert("Saved.");
+    load();
+  } catch (err) {
+    alert(err.message);
+  }
+});
+</script>
+</body>
+</html>

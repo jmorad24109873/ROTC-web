@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Records — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html" class="active"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">ATTENDANCE PAGE</h2>
+      <h3 style="color:var(--gold-dark);margin-bottom:14px;">Attendance Record</h3>
+      <p class="small-note" style="margin-bottom:10px;">
+        Note: The student who scans the QR gets their name and time recorded automatically.
+      </p>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Date</th><th>Time In</th><th>Time Out</th></tr></thead>
+            <tbody id="records-tbody">
+              <tr><td colspan="5">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+ROTC.requireRole("admin");
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+(async () => {
+  const tbody = document.getElementById("records-tbody");
+  try {
+    const records = await ROTC.getAttendanceRecords();
+    tbody.innerHTML = records.length
+      ? records.map(r => `
+        <tr>
+          <td>${r.id}</td><td>${r.name}</td><td>${r.date}</td>
+          <td>${r.timeIn || "—"}</td><td>${r.timeOut || "—"}</td>
+        </tr>`).join("")
+      : "<tr><td colspan='5'>No records yet.</td></tr>";
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5">${err.message}</td></tr>`;
+  }
+})();
+</script>
+</body>
+</html>

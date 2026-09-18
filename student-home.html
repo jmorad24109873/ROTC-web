@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="student-home.html" class="active"><span class="icon">🏠</span>HOME</a>
+        <a href="student-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="student-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="student-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">HOME PAGE</h2>
+      <div class="announcement-box">
+        <h3>ANNOUNCEMENT</h3>
+        <div id="announcements">Loading announcements…</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const user = ROTC.requireRole("student");
+
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+(async () => {
+  const box = document.getElementById("announcements");
+  try {
+    const items = await ROTC.getAnnouncements();
+    if (!items || !items.length) {
+      box.innerHTML = "<p class='small-note'>No announcements yet.</p>";
+      return;
+    }
+    box.innerHTML = items.map(a => `
+      <div class="announcement-item">
+        <div class="meta">${a.date || ""}</div>
+        <strong>${a.title || ""}</strong>
+        <p>${a.body || ""}</p>
+      </div>
+    `).join("");
+  } catch (err) {
+    box.innerHTML = `<p class='small-note'>${err.message}</p>`;
+  }
+})();
+</script>
+</body>
+</html>

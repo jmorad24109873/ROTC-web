@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .auth-page{background:var(--dark-green) url('assets/img/bg-logo.png') center 60px/620px no-repeat;}
+</style>
+</head>
+<body>
+
+<div class="auth-page">
+  <img src="assets/img/login-logo.png" class="seal" alt="DMST seal">
+  <div class="auth-card">
+    <span class="card-title">Welcome to<br>DMMMSU ROTC Unit</span>
+
+    <form id="login-form">
+      <div class="form-row">
+        <label for="loginId">Email/ID:</label>
+        <input type="text" id="loginId" required placeholder="Email or Student ID">
+      </div>
+      <div class="form-row">
+        <label for="loginPw">Password:</label>
+        <input type="password" id="loginPw" required placeholder="Password">
+      </div>
+      <div class="form-msg" id="msg"></div>
+      <div class="auth-actions">
+        <button type="submit" class="btn btn-primary">Log In</button>
+        <a href="enroll.html" class="btn btn-gold">ENROLL</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  msg.textContent = "Logging in...";
+  msg.className = "form-msg";
+  try {
+    const id = document.getElementById("loginId").value.trim();
+    const password = document.getElementById("loginPw").value;
+    const user = await ROTC.login({ id, password });
+    ROTC.saveSession(user);
+    if (user.role === "admin") {
+      window.location.href = "admin-home.html";
+    } else if (user.status === "pending") {
+      msg.textContent = "Your account is still waiting for approval.";
+      msg.className = "form-msg error";
+      ROTC.clearSession();
+    } else if (user.status === "declined") {
+      msg.textContent = "Your enrollment was declined. Contact the unit office.";
+      msg.className = "form-msg error";
+      ROTC.clearSession();
+    } else {
+      window.location.href = "student-home.html";
+    }
+  } catch (err) {
+    msg.textContent = err.message || "Invalid email/ID or password.";
+    msg.className = "form-msg error";
+  }
+});
+</script>
+</body>
+</html>

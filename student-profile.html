@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="student-home.html"><span class="icon">🏠</span>HOME</a>
+        <a href="student-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="student-profile.html" class="active"><span class="icon">👤</span>PROFILE</a>
+        <a href="student-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">PROFILE PAGE</h2>
+
+      <div class="profile-grid">
+        <div>
+          <div class="profile-photo-card">
+            <div class="avatar" id="avatar">
+              <svg viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+            </div>
+            <input type="file" id="photo-input" accept="image/*" class="hidden">
+            <button class="btn btn-primary" id="edit-photo-btn" style="background:var(--navy);border-radius:6px;">EDIT PHOTO</button>
+          </div>
+
+          <div class="grade-card">
+            <h4>Grade</h4>
+            <div class="grade-row"><span>Military Science 1</span><span class="grade-pill" id="ms1">—</span></div>
+            <div class="grade-row"><span>Military Science 2</span><span class="grade-pill" id="ms2">—</span></div>
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <h3 style="color:var(--gold-dark);margin-bottom:16px;">PROFILE DETAIL</h3>
+          <form id="profile-form">
+            <div class="detail-row"><label>NAME:</label><input id="p-name" disabled></div>
+            <div class="detail-row"><label>BIRTHDAY:</label><input id="p-birthday" type="date" disabled></div>
+            <div class="detail-row"><label>COURSE:</label><input id="p-course" disabled></div>
+            <div class="detail-row"><label>ADDRESS:</label><input id="p-address" disabled></div>
+            <div class="detail-row"><label>CP#:</label><input id="p-cp" disabled></div>
+            <div class="detail-row"><label>BENEFICIARY:</label><input id="p-beneficiary" disabled></div>
+            <div class="detail-row"><label>BLOOD TYPE:</label><input id="p-blood" disabled></div>
+            <div class="detail-row"><label>Email:</label><input id="p-email" disabled></div>
+            <div class="detail-row"><label>ID:</label><input id="p-id" disabled></div>
+            <div class="detail-row"><label>PASSWORD:</label><input id="p-password" type="password" value="**********" disabled></div>
+            <div style="text-align:right;">
+              <button type="button" class="btn-save" id="edit-toggle">EDIT INFO</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const user = ROTC.requireRole("student");
+
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+const fields = ["name","birthday","course","address","cp","beneficiary","blood","email","id"];
+
+async function loadProfile() {
+  try {
+    const p = await ROTC.getProfile(user.id);
+    fields.forEach(f => {
+      const el = document.getElementById("p-" + f);
+      if (el && p[f] !== undefined) el.value = p[f];
+    });
+    document.getElementById("ms1").textContent = p.ms1 || "—";
+    document.getElementById("ms2").textContent = p.ms2 || "—";
+    if (p.photoUrl) {
+      document.getElementById("avatar").innerHTML = `<img src="${p.photoUrl}" alt="photo">`;
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+}
+loadProfile();
+
+let editing = false;
+document.getElementById("edit-toggle").addEventListener("click", async () => {
+  editing = !editing;
+  fields.forEach(f => {
+    if (f === "id" || f === "email") return; // not editable
+    document.getElementById("p-" + f).disabled = !editing;
+  });
+  const btn = document.getElementById("edit-toggle");
+  if (editing) {
+    btn.textContent = "SAVE";
+  } else {
+    btn.textContent = "EDIT INFO";
+    // save
+    const payload = { id: user.id };
+    fields.forEach(f => payload[f] = document.getElementById("p-" + f).value);
+    try {
+      await ROTC.updateProfile(payload);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+});
+
+document.getElementById("edit-photo-btn").addEventListener("click", () => {
+  document.getElementById("photo-input").click();
+});
+document.getElementById("photo-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    document.getElementById("avatar").innerHTML = `<img src="${reader.result}" alt="photo">`;
+    try {
+      await ROTC.updateProfile({ id: user.id, photoBase64: reader.result });
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+  reader.readAsDataURL(file);
+});
+</script>
+</body>
+</html>

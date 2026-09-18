@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html" class="active"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">ATTENDANCE PAGE</h2>
+
+      <div class="panel">
+        <h3>CREATE TRAINING DAY</h3>
+        <div class="form-row"><label>DATE:</label><input type="date" id="date-in"></div>
+        <div class="form-row"><label>TIME IN</label><input type="time" id="time-in"></div>
+        <div style="text-align:right;"><button class="btn-gold" id="gen-in" style="border-radius:8px;padding:10px 22px;font-weight:700;">CREATE QR CODE</button></div>
+        <div id="qr-in" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="panel">
+        <h3>FOR TIME OUT</h3>
+        <div class="form-row"><label>DATE:</label><input type="date" id="date-out"></div>
+        <div class="form-row"><label>TIME OUT</label><input type="time" id="time-out"></div>
+        <div style="text-align:right;"><button class="btn-gold" id="gen-out" style="border-radius:8px;padding:10px 22px;font-weight:700;">CREATE QR CODE</button></div>
+        <div id="qr-out" style="margin-top:16px;"></div>
+      </div>
+
+      <div class="table-actions" style="justify-content:flex-start;">
+        <a href="admin-attendance-records.html" class="btn-view">View Attendance Records</a>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+ROTC.requireRole("admin");
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+async function generate(type, dateId, timeId, boxId) {
+  const date = document.getElementById(dateId).value;
+  const time = document.getElementById(timeId).value;
+  if (!date || !time) { alert("Please set both date and time."); return; }
+
+  const box = document.getElementById(boxId);
+  box.innerHTML = "Creating session…";
+  try {
+    const session = await ROTC.createAttendanceSession({ type, date, time });
+    box.innerHTML = `<div id="${boxId}-canvas"></div><p class="small-note">Token: ${session.token}</p>`;
+    new QRCode(document.getElementById(boxId + "-canvas"), {
+      text: session.token,
+      width: 200,
+      height: 200,
+    });
+  } catch (err) {
+    box.innerHTML = `<p class="form-msg error">${err.message}</p>`;
+  }
+}
+
+document.getElementById("gen-in").addEventListener("click", () =>
+  generate("timein", "date-in", "time-in", "qr-in"));
+document.getElementById("gen-out").addEventListener("click", () =>
+  generate("timeout", "date-out", "time-out", "qr-out"));
+</script>
+</body>
+</html>
