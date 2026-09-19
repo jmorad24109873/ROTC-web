@@ -237,9 +237,20 @@ input,select,textarea{font-family:inherit;}
 
 /* Buttons for dashboard */
 .btn-view{background:var(--navy);color:#fff;padding:8px 18px;border-radius:6px;font-weight:600;}
-.btn-approve{background:var(--navy);color:#fff;padding:6px 16px;border-radius:6px;font-weight:700;}
-.btn-decline{background:var(--green-ok);color:#fff;padding:6px 16px;border-radius:6px;font-weight:700;}
+.btn-approve{background:var(--navy);color:#fff;padding:6px 16px;border-radius:6px;font-weight:700;opacity:.55;}
+.btn-decline{background:var(--green-ok);color:#fff;padding:6px 16px;border-radius:6px;font-weight:700;opacity:.55;}
+.btn-approve.is-active,.btn-decline.is-active{
+  opacity:1;
+  box-shadow:0 0 0 3px rgba(0,0,0,.25) inset, 0 0 0 2px #fff;
+}
 .btn-delete{background:var(--red);color:#fff;padding:6px 16px;border-radius:6px;font-weight:700;}
+.status-badge{
+  display:inline-block;padding:4px 12px;border-radius:12px;font-weight:700;font-size:.8rem;
+  color:#fff;background:#888;
+}
+.status-badge.status-approved{background:var(--green-ok);}
+.status-badge.status-declined{background:var(--red);}
+.status-badge.status-pending{background:var(--gold-dark);color:#20200b;}
 .btn-discard{background:transparent;border:2px solid var(--red);color:var(--red);padding:8px 20px;border-radius:6px;font-weight:700;}
 .btn-save{background:var(--navy);color:#fff;padding:8px 20px;border-radius:6px;font-weight:700;}
 
