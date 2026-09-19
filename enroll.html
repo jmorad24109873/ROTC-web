@@ -66,6 +66,7 @@ document.getElementById("enroll-form").addEventListener("submit", async (e) => {
       msg.textContent = "Enrollment submitted! Wait for approval, then log in.";
       msg.className = "form-msg ok";
       document.getElementById("enroll-form").reset();
+      setTimeout(() => { window.location.href = "login.html"; }, 1800);
     }
   } catch (err) {
     msg.textContent = err.message || "Something went wrong. Please try again.";
