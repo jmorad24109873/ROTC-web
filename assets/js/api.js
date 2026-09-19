@@ -7,9 +7,7 @@
 
 // 1) After you deploy the Apps Script as a Web App, paste its
 //    /exec URL here. Everything else in the site uses this.
-<<<<<<< HEAD
-const API_URL = "https://script.google.com/macros/s/AKfycbyoLBMgGBMsdtED-BRVrswP-OiYvuC0i0utwithrgdzjj2rPR86IaZ8qfrfjh2jd0kc/exec";
-
+const API_URL = "https://script.google.com/macros/s/AKfycbyAsOWL9KF19yGGgO00iSngJINkTbGvAxA9JJBoSvYWeVJKIr8QKDaRAfVkX9ZtS7rc/exec";
 
 const ROTC = (() => {
 
@@ -43,12 +41,33 @@ const ROTC = (() => {
   function clearSession() { sessionStorage.removeItem("rotc_user"); }
 
   function requireRole(role) {
-    const u = getSession();
-    if (!u || u.role !== role) {
-      window.location.href = "/login.html";
-      return null;
-    }
-    return u;
+    const check = () => {
+      const u = getSession();
+      if (!u || u.role !== role) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return u;
+    };
+
+    // Fix: hitting the browser Back/Forward button can restore a page from
+    // the bfcache (a frozen snapshot) instead of reloading it, which skips
+    // this login check entirely and can show a protected page again even
+    // after logging out.
+    //
+    // 1) If a cached page does get restored, force a real reload so the
+    //    check above runs again for real.
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+    // 2) An (empty) unload listener tells most browsers not to cache this
+    //    page for back/forward at all, so Back goes to a fresh page load
+    //    in the first place rather than a snapshot.
+    window.addEventListener("unload", () => {});
+
+    return check();
   }
 
   return {

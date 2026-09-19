@@ -20,7 +20,7 @@
     </div>
     <div class="sidebar-footer">
       © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
-      <a href="#" id="logout-link" style="font-weight:700;">Log Out</a>
+      <a href="#" id="logout-link" class="btn-logout">Log Out</a>
     </div>
   </aside>
 
@@ -83,13 +83,13 @@ async function load() {
         <td>${s.beneficiary || ""}</td>
         <td>${s.cp || ""}</td>
         <td>${s.email || ""}</td>
-        <td>${s.status}</td>
+        <td><span class="status-badge status-${(s.status || "pending").toLowerCase()}">${s.status || "Pending"}</span></td>
         <td><input type="text" class="ms1-input" value="${s.ms1 || ""}" style="width:60px;"></td>
         <td><input type="text" class="ms2-input" value="${s.ms2 || ""}" style="width:60px;"></td>
         <td>
           <div class="table-actions">
-            <button class="btn-approve" data-act="Approved">Approved</button>
-            <button class="btn-decline" data-act="Declined">Decline</button>
+            <button class="btn-approve ${s.status === "Approved" ? "is-active" : ""}" data-act="Approved">Approved</button>
+            <button class="btn-decline ${s.status === "Declined" ? "is-active" : ""}" data-act="Declined">Decline</button>
             <button class="btn-delete" data-act="Delete">Delete</button>
             <button class="btn-save" data-act="SaveGrades">Save</button>
           </div>

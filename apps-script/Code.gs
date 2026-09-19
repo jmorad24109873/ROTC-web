@@ -36,6 +36,53 @@ const ATTEND_HEADERS  = ["StudentID","Name","Date","TimeIn","TimeOut"];
 const ANNOUNCE_HEADERS = ["Date","Title","Body"];
 
 // ---------------------------------------------------------------
+// Spreadsheet menu — lets you add an admin from inside the Sheet,
+// no need to open the Apps Script editor each time.
+// ---------------------------------------------------------------
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("ROTC Tools")
+    .addItem("Add New Admin", "addAdminPrompt_")
+    .addToUi();
+}
+
+function addAdminPrompt_() {
+  const ui = SpreadsheetApp.getUi();
+
+  const idResp = ui.prompt("New Admin — Step 1 of 4", "Unique ID (e.g. admin2):", ui.ButtonSet.OK_CANCEL);
+  if (idResp.getSelectedButton() !== ui.Button.OK || !idResp.getResponseText()) return;
+  const id = idResp.getResponseText().trim();
+
+  const nameResp = ui.prompt("New Admin — Step 2 of 4", "Full name:", ui.ButtonSet.OK_CANCEL);
+  if (nameResp.getSelectedButton() !== ui.Button.OK) return;
+  const name = nameResp.getResponseText().trim();
+
+  const emailResp = ui.prompt("New Admin — Step 3 of 4", "Email:", ui.ButtonSet.OK_CANCEL);
+  if (emailResp.getSelectedButton() !== ui.Button.OK) return;
+  const email = emailResp.getResponseText().trim();
+
+  const pwResp = ui.prompt("New Admin — Step 4 of 4", "Password (they'll use this to log in):", ui.ButtonSet.OK_CANCEL);
+  if (pwResp.getSelectedButton() !== ui.Button.OK || !pwResp.getResponseText()) return;
+  const password = pwResp.getResponseText();
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ensureSheet_(ss, SHEET_NAMES.ADMINS, ADMIN_HEADERS);
+
+  const existing = sheetToObjects_(sheet);
+  if (existing.some(r => String(r.ID) === id || String(r.Email).toLowerCase() === email.toLowerCase())) {
+    ui.alert("An admin with that ID or email already exists.");
+    return;
+  }
+
+  appendRow_(sheet, ADMIN_HEADERS, {
+    ID: id, Name: name, Email: email, Password: hash_(password),
+    Rank: "", Role: "Administrator", Address: "", CP: "", PhotoUrl: "",
+  });
+
+  ui.alert("Admin added! They can log in with:\nEmail: " + email + "\nPassword: (what you just typed)");
+}
+
+// ---------------------------------------------------------------
 // One-time setup
 // ---------------------------------------------------------------
 function initializeSheets() {
@@ -278,9 +325,10 @@ function saveAnnouncement(payload) {
 function createAttendanceSession(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAMES.SESSIONS);
-  const token = [payload.type, payload.date, payload.time, Utilities.getUuid().slice(0, 8)].join("|");
+  const date = normalizeDate_(payload.date);
+  const token = [payload.type, date, payload.time, Utilities.getUuid().slice(0, 8)].join("|");
   appendRow_(sheet, SESSION_HEADERS, {
-    Token: token, Type: payload.type, Date: payload.date, Time: payload.time,
+    Token: token, Type: payload.type, Date: date, Time: payload.time,
     CreatedAt: new Date().toISOString(),
   });
   return { token };
@@ -295,11 +343,13 @@ function recordAttendance(payload) {
     throw new Error("Wrong QR code for this action.");
   }
 
+  const sessionDate = normalizeDate_(session.Date);
   const sheet = ss.getSheetByName(SHEET_NAMES.ATTENDANCE);
   const rows = sheetToObjects_(sheet);
   let rowIndex = null;
   for (let i = 0; i < rows.length; i++) {
-    if (rows[i].StudentID === payload.studentId && rows[i].Date === session.Date) {
+    if (String(rows[i].StudentID) === String(payload.studentId)
+        && normalizeDate_(rows[i].Date) === sessionDate) {
       rowIndex = i + 2; // header + 1-index
       break;
     }
@@ -315,7 +365,7 @@ function recordAttendance(payload) {
     }
   } else {
     appendRow_(sheet, ATTEND_HEADERS, {
-      StudentID: payload.studentId, Name: payload.name, Date: session.Date,
+      StudentID: payload.studentId, Name: payload.name, Date: sessionDate,
       TimeIn: payload.type === "timein" ? now : "",
       TimeOut: payload.type === "timeout" ? now : "",
     });
@@ -327,15 +377,15 @@ function recordAttendance(payload) {
 function getMyAttendance(payload) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const rows = sheetToObjects_(ss.getSheetByName(SHEET_NAMES.ATTENDANCE));
-  return rows.filter(r => r.StudentID === payload.id)
-    .map(r => ({ date: r.Date, timeIn: r.TimeIn, timeOut: r.TimeOut }));
+  return rows.filter(r => String(r.StudentID) === String(payload.id))
+    .map(r => ({ date: normalizeDate_(r.Date), timeIn: r.TimeIn, timeOut: r.TimeOut }));
 }
 
 function getAttendanceRecords() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const rows = sheetToObjects_(ss.getSheetByName(SHEET_NAMES.ATTENDANCE));
   return rows.map(r => ({
-    id: r.StudentID, name: r.Name, date: r.Date, timeIn: r.TimeIn, timeOut: r.TimeOut,
+    id: r.StudentID, name: r.Name, date: normalizeDate_(r.Date), timeIn: r.TimeIn, timeOut: r.TimeOut,
   }));
 }
 
@@ -442,4 +492,17 @@ function updateRow_(sheet, headers, rowIndex, dataObj) {
 function hash_(text) {
   const digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(text));
   return digest.map(b => (b < 0 ? b + 256 : b).toString(16).padStart(2, "0")).join("");
+}
+
+// Google Sheets silently turns date-looking text (e.g. "2026-09-19") into
+// a real Date value in the cell. When we later read that cell back, we get
+// a JS Date object instead of the original string, which breaks simple
+// string comparisons. This normalizes either shape into "yyyy-MM-dd" text
+// so date matching (e.g. same student, same day, Time-In vs Time-Out) is
+// always comparing like with like.
+function normalizeDate_(value) {
+  if (value instanceof Date) {
+    return Utilities.formatDate(value, Session.getScriptTimeZone(), "yyyy-MM-dd");
+  }
+  return String(value).trim();
 }
