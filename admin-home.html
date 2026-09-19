@@ -16,6 +16,7 @@
         <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
         <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
         <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+        <a href="admin-manage-admins.html" id="nav-manage-admins" class="hidden"><span class="icon">👑</span>MANAGE ADMINS</a>
       </nav>
     </div>
     <div class="sidebar-footer">
@@ -54,7 +55,8 @@
 
 <script src="assets/js/api.js"></script>
 <script>
-ROTC.requireRole("admin");
+const user = ROTC.requireRole("admin");
+if (user && user.isSuperAdmin) { const na = document.getElementById("nav-manage-admins"); if (na) na.classList.remove("hidden"); }
 document.getElementById("logout-link").addEventListener("click", (e) => {
   e.preventDefault();
   ROTC.clearSession();

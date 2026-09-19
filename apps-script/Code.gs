@@ -65,6 +65,9 @@ function addAdminPrompt_() {
   if (pwResp.getSelectedButton() !== ui.Button.OK || !pwResp.getResponseText()) return;
   const password = pwResp.getResponseText();
 
+  const superResp = ui.alert("Super Admin?", "Should this account be a Super Admin (can manage other admins and edit grades)?", ui.ButtonSet.YES_NO);
+  const isSuper = superResp === ui.Button.YES;
+
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ensureSheet_(ss, SHEET_NAMES.ADMINS, ADMIN_HEADERS);
 
@@ -76,10 +79,10 @@ function addAdminPrompt_() {
 
   appendRow_(sheet, ADMIN_HEADERS, {
     ID: id, Name: name, Email: email, Password: hash_(password),
-    Rank: "", Role: "Administrator", Address: "", CP: "", PhotoUrl: "",
+    Rank: "", Role: isSuper ? "Super Admin" : "Admin", Address: "", CP: "", PhotoUrl: "",
   });
 
-  ui.alert("Admin added! They can log in with:\nEmail: " + email + "\nPassword: (what you just typed)");
+  ui.alert("Admin added! They can log in with:\nEmail: " + email + "\nPassword: (what you just typed)\nRole: " + (isSuper ? "Super Admin" : "Admin"));
 }
 
 // ---------------------------------------------------------------
@@ -98,11 +101,11 @@ function initializeSheets() {
   if (!admins.length) {
     appendRow_(ss.getSheetByName(SHEET_NAMES.ADMINS), ADMIN_HEADERS, {
       ID: "admin", Name: "ROTC Admin", Email: "admin@rotc.local",
-      Password: hash_("admin123"), Rank: "", Role: "Administrator",
+      Password: hash_("admin123"), Rank: "", Role: "Super Admin",
       Address: "", CP: "", PhotoUrl: "",
     });
   }
-  Logger.log("Sheets initialized. Default admin login -> ID/Email: admin@rotc.local  Password: admin123");
+  Logger.log("Sheets initialized. Default Super Admin login -> Email: admin@rotc.local  Password: admin123");
 }
 
 function ensureSheet_(ss, name, headers) {
@@ -161,6 +164,7 @@ const ACTIONS = {
   createAttendanceSession, getAttendanceRecords,
   getAllStudents, setStudentStatus, deleteStudent, updateStudentGrades,
   getOfficers, saveOfficers,
+  getAllAdmins, addAdmin, updateAdmin, deleteAdmin,
 };
 
 // ---------------------------------------------------------------
@@ -212,10 +216,28 @@ function login(payload) {
     && String(r.Password) === pwHash
   );
   if (admin) {
-    return { role: "admin", id: admin.ID, name: admin.Name, status: "Approved" };
+    return {
+      role: "admin", id: admin.ID, name: admin.Name, status: "Approved",
+      isSuperAdmin: isSuperAdminRole_(admin.Role),
+    };
   }
 
   throw new Error("Invalid email/ID or password.");
+}
+
+// "Super Admin", "super admin", "SUPERADMIN" etc. all count.
+function isSuperAdminRole_(roleText) {
+  return String(roleText || "").toLowerCase().replace(/\s+/g, "") === "superadmin";
+}
+
+// Server-side gate: call at the top of any action only a Super Admin may do.
+function assertSuperAdmin_(requesterId) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const admins = sheetToObjects_(ss.getSheetByName(SHEET_NAMES.ADMINS));
+  const requester = admins.find(r => String(r.ID) === String(requesterId));
+  if (!requester || !isSuperAdminRole_(requester.Role)) {
+    throw new Error("Only a Super Admin can do that.");
+  }
 }
 
 // ---------------------------------------------------------------
@@ -420,12 +442,84 @@ function deleteStudent(payload) {
 }
 
 function updateStudentGrades(payload) {
+  assertSuperAdmin_(payload.requesterId);
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_NAMES.STUDENTS);
   const rowIndex = findRowIndexByField_(sheet, "ID", payload.id);
   if (!rowIndex) throw new Error("Student not found.");
   updateRow_(sheet, STUDENT_HEADERS, rowIndex, { MS1: payload.ms1, MS2: payload.ms2 });
   return { updated: true };
+}
+
+// ---------------------------------------------------------------
+// Super Admin: manage admin accounts
+// ---------------------------------------------------------------
+function getAllAdmins(payload) {
+  assertSuperAdmin_(payload.requesterId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const rows = sheetToObjects_(ss.getSheetByName(SHEET_NAMES.ADMINS));
+  return rows.map(r => ({
+    id: r.ID, name: r.Name, email: r.Email, role: r.Role,
+    rank: r.Rank, address: r.Address, cp: r.CP,
+    isSuperAdmin: isSuperAdminRole_(r.Role),
+  }));
+}
+
+function addAdmin(payload) {
+  assertSuperAdmin_(payload.requesterId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAMES.ADMINS);
+  const existing = sheetToObjects_(sheet);
+
+  if (!payload.id || !payload.password) throw new Error("ID and password are required.");
+  if (existing.some(r => String(r.ID) === String(payload.id) ||
+      String(r.Email).toLowerCase() === String(payload.email).toLowerCase())) {
+    throw new Error("An admin with that ID or email already exists.");
+  }
+
+  appendRow_(sheet, ADMIN_HEADERS, {
+    ID: payload.id, Name: payload.name, Email: payload.email,
+    Password: hash_(payload.password),
+    Role: payload.isSuperAdmin ? "Super Admin" : "Admin",
+    Rank: payload.rank || "", Address: payload.address || "", CP: payload.cp || "",
+    PhotoUrl: "",
+  });
+  return { added: true };
+}
+
+function updateAdmin(payload) {
+  assertSuperAdmin_(payload.requesterId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAMES.ADMINS);
+  const rowIndex = findRowIndexByField_(sheet, "ID", payload.id);
+  if (!rowIndex) throw new Error("Admin not found.");
+
+  const map = {
+    Name: payload.name, Email: payload.email, Rank: payload.rank,
+    Address: payload.address, CP: payload.cp,
+    Role: payload.isSuperAdmin ? "Super Admin" : "Admin",
+  };
+  if (payload.password) map.Password = hash_(payload.password);
+  updateRow_(sheet, ADMIN_HEADERS, rowIndex, map);
+  return { updated: true };
+}
+
+function deleteAdmin(payload) {
+  assertSuperAdmin_(payload.requesterId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_NAMES.ADMINS);
+  const rows = sheetToObjects_(sheet);
+  const target = rows.find(r => String(r.ID) === String(payload.id));
+  if (!target) throw new Error("Admin not found.");
+
+  if (isSuperAdminRole_(target.Role)) {
+    const superCount = rows.filter(r => isSuperAdminRole_(r.Role)).length;
+    if (superCount <= 1) throw new Error("Cannot delete the only Super Admin account.");
+  }
+
+  const rowIndex = findRowIndexByField_(sheet, "ID", payload.id);
+  sheet.deleteRow(rowIndex);
+  return { deleted: true };
 }
 
 // ---------------------------------------------------------------

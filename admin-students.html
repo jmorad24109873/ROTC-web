@@ -16,6 +16,7 @@
         <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
         <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
         <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+        <a href="admin-manage-admins.html" id="nav-manage-admins" class="hidden"><span class="icon">👑</span>MANAGE ADMINS</a>
       </nav>
     </div>
     <div class="sidebar-footer">
@@ -34,8 +35,8 @@
       <h2 class="page-title">ENROLLED STUDENT INFORMATION</h2>
       <p class="small-note" style="margin-bottom:10px;">
         Note: Information in the enrollment of a student must include all fields above.
-        Grades (MS1/MS2) can be edited inline and saved.
       </p>
+      <p class="small-note" id="grades-note" style="margin-bottom:10px;"></p>
 
       <div class="panel">
         <div class="table-scroll">
@@ -59,7 +60,8 @@
 
 <script src="assets/js/api.js"></script>
 <script>
-ROTC.requireRole("admin");
+const user = ROTC.requireRole("admin");
+if (user && user.isSuperAdmin) { const na = document.getElementById("nav-manage-admins"); if (na) na.classList.remove("hidden"); }
 document.getElementById("logout-link").addEventListener("click", (e) => {
   e.preventDefault();
   ROTC.clearSession();
@@ -74,6 +76,7 @@ async function load() {
       tbody.innerHTML = "<tr><td colspan='11'>No students enrolled yet.</td></tr>";
       return;
     }
+    const canEditGrades = !!user.isSuperAdmin;
     tbody.innerHTML = students.map(s => `
       <tr data-id="${s.id}">
         <td>${s.id}</td>
@@ -84,18 +87,22 @@ async function load() {
         <td>${s.cp || ""}</td>
         <td>${s.email || ""}</td>
         <td><span class="status-badge status-${(s.status || "pending").toLowerCase()}">${s.status || "Pending"}</span></td>
-        <td><input type="text" class="ms1-input" value="${s.ms1 || ""}" style="width:60px;"></td>
-        <td><input type="text" class="ms2-input" value="${s.ms2 || ""}" style="width:60px;"></td>
+        <td><input type="text" class="ms1-input" value="${s.ms1 || ""}" style="width:60px;" ${canEditGrades ? "" : "disabled"}></td>
+        <td><input type="text" class="ms2-input" value="${s.ms2 || ""}" style="width:60px;" ${canEditGrades ? "" : "disabled"}></td>
         <td>
           <div class="table-actions">
             <button class="btn-approve ${s.status === "Approved" ? "is-active" : ""}" data-act="Approved">Approved</button>
             <button class="btn-decline ${s.status === "Declined" ? "is-active" : ""}" data-act="Declined">Decline</button>
             <button class="btn-delete" data-act="Delete">Delete</button>
-            <button class="btn-save" data-act="SaveGrades">Save</button>
+            ${canEditGrades ? '<button class="btn-save" data-act="SaveGrades">Save</button>' : ""}
           </div>
         </td>
       </tr>
     `).join("");
+    if (!canEditGrades) {
+      document.getElementById("grades-note").textContent =
+        "Only the Super Admin can edit MS1/MS2 grades.";
+    }
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="11">${err.message}</td></tr>`;
   }
@@ -119,7 +126,7 @@ document.getElementById("students-tbody").addEventListener("click", async (e) =>
     if (act === "SaveGrades") {
       const ms1 = row.querySelector(".ms1-input").value;
       const ms2 = row.querySelector(".ms2-input").value;
-      await ROTC.updateStudentGrades({ id, ms1, ms2 });
+      await ROTC.updateStudentGrades({ id, ms1, ms2, requesterId: user.id });
       alert("Grades saved.");
       return;
     }

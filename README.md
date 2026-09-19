@@ -126,3 +126,27 @@ apps-script/Code.gs           Backend — paste into Google Sheets > Apps Script
   announcements (e.g., by calling it from the Apps Script editor's console,
   or you can wire up a small admin form later); the student Home page
   already reads and displays them.
+
+## Roles: Admin vs Super Admin
+
+- **Admin** (regular): approve/decline student enrollments, run attendance
+  (generate QR codes, view records), and manage the Instructors & Officers
+  roster.
+- **Super Admin**: everything an Admin can do, **plus** editing student
+  grades (MS1/MS2) and managing admin accounts (add, delete, promote/demote)
+  from the new **Manage Admins** page — only visible in the sidebar to
+  Super Admins.
+
+The `Admins` sheet's `Role` column controls this — a row with `Super Admin`
+in that column (case/spacing don't matter) is a Super Admin; anything else
+is a regular Admin. `initializeSheets` now creates the starter account as a
+Super Admin.
+
+**If you already ran `initializeSheets` before this update,** your existing
+admin row's `Role` cell probably still says `Administrator`, which is *not*
+recognized as Super Admin. Open the `Admins` tab in your Sheet and change
+that cell to `Super Admin` for whichever account should have full access.
+
+To add more admins afterward, use the **Manage Admins** page on the site
+(as a Super Admin) or the **ROTC Tools > Add New Admin** menu in the
+spreadsheet — both let you choose the role when creating the account.

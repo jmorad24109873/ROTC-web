@@ -7,7 +7,7 @@
 
 // 1) After you deploy the Apps Script as a Web App, paste its
 //    /exec URL here. Everything else in the site uses this.
-const API_URL = "https://script.google.com/macros/s/AKfycbyAsOWL9KF19yGGgO00iSngJINkTbGvAxA9JJBoSvYWeVJKIr8QKDaRAfVkX9ZtS7rc/exec";
+const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 
 const ROTC = (() => {
 
@@ -40,14 +40,44 @@ const ROTC = (() => {
   }
   function clearSession() { sessionStorage.removeItem("rotc_user"); }
 
- function requireRole(role) { const check = () => 
-  { const u = getSession(); if (!u || u.role !== role) 
-    { window.location.href = "login.html"; return null; } 
-    return u; 
-  }; 
-  window.addEventListener("pageshow", (event) => { if (event.persisted) { window.location.reload(); } }); 
-  window.addEventListener("unload", () => {}); return check(); 
-}
+  function requireRole(role) {
+    const check = () => {
+      const u = getSession();
+      if (!u || u.role !== role) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return u;
+    };
+
+    // Fix: hitting the browser Back/Forward button can restore a page from
+    // the bfcache (a frozen snapshot) instead of reloading it, which skips
+    // this login check entirely and can show a protected page again even
+    // after logging out.
+    //
+    // 1) If a cached page does get restored, force a real reload so the
+    //    check above runs again for real.
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+    // 2) An (empty) unload listener tells most browsers not to cache this
+    //    page for back/forward at all, so Back goes to a fresh page load
+    //    in the first place rather than a snapshot.
+    window.addEventListener("unload", () => {});
+
+    return check();
+  }
+
+  function requireSuperAdmin() {
+    const u = requireRole("admin");
+    if (u && !u.isSuperAdmin) {
+      window.location.href = "admin-home.html";
+      return null;
+    }
+    return u;
+  }
 
   return {
     // auth
@@ -78,7 +108,13 @@ const ROTC = (() => {
     // admin: announcements
     saveAnnouncement: (payload) => call("saveAnnouncement", payload),
 
+    // super admin: manage admin accounts
+    getAllAdmins: (payload) => call("getAllAdmins", payload),
+    addAdmin: (payload) => call("addAdmin", payload),
+    updateAdmin: (payload) => call("updateAdmin", payload),
+    deleteAdmin: (payload) => call("deleteAdmin", payload),
+
     // session
-    saveSession, getSession, clearSession, requireRole,
+    saveSession, getSession, clearSession, requireRole, requireSuperAdmin,
   };
 })();

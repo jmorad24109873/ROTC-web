@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Admins — DMMMSU SLUC ROTC Unit</title>
+<link rel="icon" href="assets/img/dmst-seal.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="dash">
+  <aside class="sidebar">
+    <div>
+      <nav>
+        <a href="admin-home.html"><span class="icon">🏠</span>HOME</a>
+        <a href="admin-attendance.html"><span class="icon">📅</span>ATTENDANCE</a>
+        <a href="admin-profile.html"><span class="icon">👤</span>PROFILE</a>
+        <a href="admin-about.html"><span class="icon">ℹ️</span>ABOUT US</a>
+        <a href="admin-manage-admins.html" id="nav-manage-admins" class="active"><span class="icon">👑</span>MANAGE ADMINS</a>
+      </nav>
+    </div>
+    <div class="sidebar-footer">
+      © JUHAIR D. MORAD<br>BSCS STUDENT<br><br>
+      <a href="#" id="logout-link" class="btn-logout">Log Out</a>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-header">
+      <img src="assets/img/dmst-seal.png" alt="seal">
+      <h1>DMMMSU SLUC ROTC UNIT</h1>
+    </header>
+
+    <main class="content">
+      <h2 class="page-title">MANAGE ADMINS</h2>
+      <p class="small-note" style="margin-bottom:10px;">
+        Super Admin only. Regular admins can approve students, run attendance,
+        and manage instructors/officers — but only a Super Admin can add or
+        remove admin accounts, promote someone to Super Admin, or edit grades.
+      </p>
+
+      <div class="panel">
+        <h3>ADD NEW ADMIN</h3>
+        <div class="form-row"><label>ID:</label><input id="new-id" placeholder="unique ID"></div>
+        <div class="form-row"><label>Name:</label><input id="new-name"></div>
+        <div class="form-row"><label>Email:</label><input id="new-email" type="email"></div>
+        <div class="form-row"><label>Password:</label><input id="new-password" type="password"></div>
+        <div class="form-row">
+          <label>Super Admin?</label>
+          <select id="new-super">
+            <option value="no">No — regular Admin</option>
+            <option value="yes">Yes — Super Admin</option>
+          </select>
+        </div>
+        <div style="text-align:right;">
+          <button class="btn-save" id="add-admin-btn">Add Admin</button>
+        </div>
+        <div class="form-msg" id="add-msg"></div>
+      </div>
+
+      <div class="panel">
+        <h3>CURRENT ADMINS</h3>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th></th></tr>
+            </thead>
+            <tbody id="admins-tbody">
+              <tr><td colspan="5">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script src="assets/js/api.js"></script>
+<script>
+const user = ROTC.requireSuperAdmin();
+
+document.getElementById("logout-link").addEventListener("click", (e) => {
+  e.preventDefault();
+  ROTC.clearSession();
+  window.location.href = "login.html";
+});
+
+async function load() {
+  const tbody = document.getElementById("admins-tbody");
+  try {
+    const admins = await ROTC.getAllAdmins({ requesterId: user.id });
+    tbody.innerHTML = admins.map(a => `
+      <tr data-id="${a.id}">
+        <td>${a.id}</td>
+        <td>${a.name || ""}</td>
+        <td>${a.email || ""}</td>
+        <td><span class="status-badge ${a.isSuperAdmin ? "status-approved" : "status-pending"}">${a.isSuperAdmin ? "Super Admin" : "Admin"}</span></td>
+        <td>
+          <div class="table-actions">
+            <button class="btn-view toggle-super" data-super="${a.isSuperAdmin ? "no" : "yes"}">
+              ${a.isSuperAdmin ? "Demote to Admin" : "Promote to Super Admin"}
+            </button>
+            ${a.id === user.id ? "" : '<button class="btn-delete">Delete</button>'}
+          </div>
+        </td>
+      </tr>
+    `).join("");
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="5">${err.message}</td></tr>`;
+  }
+}
+load();
+
+document.getElementById("admins-tbody").addEventListener("click", async (e) => {
+  const row = e.target.closest("tr");
+  if (!row) return;
+  const id = row.dataset.id;
+
+  try {
+    if (e.target.classList.contains("toggle-super")) {
+      const makeSuper = e.target.dataset.super === "yes";
+      await ROTC.updateAdmin({ requesterId: user.id, id, isSuperAdmin: makeSuper });
+      load();
+    } else if (e.target.textContent.trim() === "Delete") {
+      if (!confirm("Delete this admin account?")) return;
+      await ROTC.deleteAdmin({ requesterId: user.id, id });
+      load();
+    }
+  } catch (err) {
+    alert(err.message);
+  }
+});
+
+document.getElementById("add-admin-btn").addEventListener("click", async () => {
+  const msg = document.getElementById("add-msg");
+  const payload = {
+    requesterId: user.id,
+    id: document.getElementById("new-id").value.trim(),
+    name: document.getElementById("new-name").value.trim(),
+    email: document.getElementById("new-email").value.trim(),
+    password: document.getElementById("new-password").value,
+    isSuperAdmin: document.getElementById("new-super").value === "yes",
+  };
+  if (!payload.id || !payload.password) {
+    msg.textContent = "ID and password are required.";
+    msg.className = "form-msg error";
+    return;
+  }
+  try {
+    await ROTC.addAdmin(payload);
+    msg.textContent = "Admin added.";
+    msg.className = "form-msg ok";
+    ["new-id","new-name","new-email","new-password"].forEach(id => document.getElementById(id).value = "");
+    document.getElementById("new-super").value = "no";
+    load();
+  } catch (err) {
+    msg.textContent = err.message;
+    msg.className = "form-msg error";
+  }
+});
+</script>
+</body>
+</html>
