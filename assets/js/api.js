@@ -41,12 +41,27 @@ const ROTC = (() => {
   function clearSession() { sessionStorage.removeItem("rotc_user"); }
 
   function requireRole(role) {
-    const u = getSession();
-    if (!u || u.role !== role) {
-      window.location.href = "/login.html";
-      return null;
-    }
-    return u;
+    const check = () => {
+      const u = getSession();
+      if (!u || u.role !== role) {
+        window.location.href = "login.html";
+        return null;
+      }
+      return u;
+    };
+
+    // Fix: hitting the browser Back/Forward button can restore a page from
+    // the bfcache (a frozen snapshot) instead of reloading it, which skips
+    // this login check entirely and can show a protected page again even
+    // after logging out. When that happens, force a real reload so the
+    // check above actually runs again.
+    window.addEventListener("pageshow", (event) => {
+      if (event.persisted) {
+        window.location.reload();
+      }
+    });
+
+    return check();
   }
 
   return {
