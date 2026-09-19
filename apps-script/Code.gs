@@ -36,6 +36,53 @@ const ATTEND_HEADERS  = ["StudentID","Name","Date","TimeIn","TimeOut"];
 const ANNOUNCE_HEADERS = ["Date","Title","Body"];
 
 // ---------------------------------------------------------------
+// Spreadsheet menu — lets you add an admin from inside the Sheet,
+// no need to open the Apps Script editor each time.
+// ---------------------------------------------------------------
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("ROTC Tools")
+    .addItem("Add New Admin", "addAdminPrompt_")
+    .addToUi();
+}
+
+function addAdminPrompt_() {
+  const ui = SpreadsheetApp.getUi();
+
+  const idResp = ui.prompt("New Admin — Step 1 of 4", "Unique ID (e.g. admin2):", ui.ButtonSet.OK_CANCEL);
+  if (idResp.getSelectedButton() !== ui.Button.OK || !idResp.getResponseText()) return;
+  const id = idResp.getResponseText().trim();
+
+  const nameResp = ui.prompt("New Admin — Step 2 of 4", "Full name:", ui.ButtonSet.OK_CANCEL);
+  if (nameResp.getSelectedButton() !== ui.Button.OK) return;
+  const name = nameResp.getResponseText().trim();
+
+  const emailResp = ui.prompt("New Admin — Step 3 of 4", "Email:", ui.ButtonSet.OK_CANCEL);
+  if (emailResp.getSelectedButton() !== ui.Button.OK) return;
+  const email = emailResp.getResponseText().trim();
+
+  const pwResp = ui.prompt("New Admin — Step 4 of 4", "Password (they'll use this to log in):", ui.ButtonSet.OK_CANCEL);
+  if (pwResp.getSelectedButton() !== ui.Button.OK || !pwResp.getResponseText()) return;
+  const password = pwResp.getResponseText();
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ensureSheet_(ss, SHEET_NAMES.ADMINS, ADMIN_HEADERS);
+
+  const existing = sheetToObjects_(sheet);
+  if (existing.some(r => String(r.ID) === id || String(r.Email).toLowerCase() === email.toLowerCase())) {
+    ui.alert("An admin with that ID or email already exists.");
+    return;
+  }
+
+  appendRow_(sheet, ADMIN_HEADERS, {
+    ID: id, Name: name, Email: email, Password: hash_(password),
+    Rank: "", Role: "Administrator", Address: "", CP: "", PhotoUrl: "",
+  });
+
+  ui.alert("Admin added! They can log in with:\nEmail: " + email + "\nPassword: (what you just typed)");
+}
+
+// ---------------------------------------------------------------
 // One-time setup
 // ---------------------------------------------------------------
 function initializeSheets() {
