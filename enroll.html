@@ -19,12 +19,24 @@
     <form id="enroll-form">
       <div class="form-row"><label for="email">Email:</label><input type="email" id="email" required></div>
       <div class="form-row"><label for="password">Password:</label><input type="password" id="password" required minlength="6"></div>
+      <div class="form-row"><label for="confirmPassword">Confirm Password:</label><input type="password" id="confirmPassword" required minlength="6"></div>
       <div class="form-row"><label for="studentId">Student ID:</label><input type="text" id="studentId" required></div>
       <div class="form-row"><label for="name">Name:</label><input type="text" id="name" required></div>
       <div class="form-row"><label for="course">Course:</label><input type="text" id="course" required></div>
       <div class="form-row"><label for="address">Address:</label><input type="text" id="address" required></div>
-      <div class="form-row"><label for="beneficiary">Beneficiary:</label><input type="text" id="beneficiary" required></div>
+      <div class="form-row"><label for="parent">Parent:</label><input type="text" id="parent" required></div>
       <div class="form-row"><label for="cp">CP#:</label><input type="text" id="cp" required></div>
+      <div class="form-row">
+        <label for="blood">Blood Type:</label>
+        <select id="blood" required>
+          <option value="" disabled selected>Select…</option>
+          <option>A+</option><option>A-</option>
+          <option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option>
+          <option>O+</option><option>O-</option>
+          <option>Not sure</option>
+        </select>
+      </div>
       <div class="form-msg" id="msg"></div>
       <div class="auth-actions">
         <button type="submit" class="btn btn-gold">ENROLL</button>
@@ -42,18 +54,28 @@
 document.getElementById("enroll-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const msg = document.getElementById("msg");
+
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  if (password !== confirmPassword) {
+    msg.textContent = "Passwords do not match.";
+    msg.className = "form-msg error";
+    return;
+  }
+
   msg.textContent = "Submitting...";
   msg.className = "form-msg";
 
   const payload = {
     email: document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value,
+    password: password,
     studentId: document.getElementById("studentId").value.trim(),
     name: document.getElementById("name").value.trim(),
     course: document.getElementById("course").value.trim(),
     address: document.getElementById("address").value.trim(),
-    beneficiary: document.getElementById("beneficiary").value.trim(),
+    parent: document.getElementById("parent").value.trim(),
     cp: document.getElementById("cp").value.trim(),
+    blood: document.getElementById("blood").value,
   };
 
   try {

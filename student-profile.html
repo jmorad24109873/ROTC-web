@@ -58,7 +58,7 @@
             <div class="detail-row"><label>COURSE:</label><input id="p-course" disabled></div>
             <div class="detail-row"><label>ADDRESS:</label><input id="p-address" disabled></div>
             <div class="detail-row"><label>CP#:</label><input id="p-cp" disabled></div>
-            <div class="detail-row"><label>BENEFICIARY:</label><input id="p-beneficiary" disabled></div>
+            <div class="detail-row"><label>PARENT:</label><input id="p-parent" disabled></div>
             <div class="detail-row"><label>BLOOD TYPE:</label><input id="p-blood" disabled></div>
             <div class="detail-row"><label>Email:</label><input id="p-email" disabled></div>
             <div class="detail-row"><label>ID:</label><input id="p-id" disabled></div>
@@ -83,7 +83,7 @@ document.getElementById("logout-link").addEventListener("click", (e) => {
   window.location.href = "login.html";
 });
 
-const fields = ["name","birthday","course","address","cp","beneficiary","blood","email","id"];
+const fields = ["name","birthday","course","address","cp","parent","blood","email","id"];
 
 async function loadProfile() {
   try {

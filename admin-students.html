@@ -44,7 +44,7 @@
             <thead>
               <tr>
                 <th>ID</th><th>NAME</th><th>ADDRESS</th><th>Course</th>
-                <th>Beneficiary</th><th>CP#</th><th>Email</th><th>Status</th>
+                <th>Parent</th><th>CP#</th><th>Email</th><th>Status</th>
                 <th>MS1</th><th>MS2</th><th></th>
               </tr>
             </thead>
@@ -83,7 +83,7 @@ async function load() {
         <td>${s.name}</td>
         <td>${s.address || ""}</td>
         <td>${s.course || ""}</td>
-        <td>${s.beneficiary || ""}</td>
+        <td>${s.parent || ""}</td>
         <td>${s.cp || ""}</td>
         <td>${s.email || ""}</td>
         <td><span class="status-badge status-${(s.status || "pending").toLowerCase()}">${s.status || "Pending"}</span></td>

@@ -150,3 +150,35 @@ that cell to `Super Admin` for whichever account should have full access.
 To add more admins afterward, use the **Manage Admins** page on the site
 (as a Super Admin) or the **ROTC Tools > Add New Admin** menu in the
 spreadsheet — both let you choose the role when creating the account.
+
+## Enrollment fields update
+
+- Added **Blood Type** to the enrollment form (was previously only editable
+  later in Profile).
+- Renamed **Beneficiary** to **Parent** everywhere (enrollment form, student
+  profile, admin students table, and the `Parent` column in the `Students`
+  sheet — was `Beneficiary`). If you already have enrolled students, their
+  existing data is safe; just rename the column header in your Sheet from
+  `Beneficiary` to `Parent` to match.
+- Enrollment now requires typing the password twice (a Confirm Password
+  field) — this is checked in the browser before it's ever sent to your
+  backend.
+
+## Email notifications on approve/decline
+
+When an admin (or Super Admin) clicks **Approved** or **Decline** on a
+student in the Enrolled Student Information table, the backend now emails
+that student automatically — approval gets a welcome message, decline gets
+a polite notice.
+
+**Important limitation:** the email is always sent from the *Google account
+that deployed the Apps Script* (whichever account you picked under
+Deploy > "Execute as"), not from whichever admin clicked the button — Apps
+Script has no way to send "as" a different person per click. If you want
+it to look like it's from the unit rather than your personal email, deploy
+the script from a dedicated unit Google account, or set up an email alias
+on your account and it'll still show your account as sender.
+
+Also note Gmail's daily sending quota applies here (about 100/day on a
+free personal Gmail account, more on Google Workspace) — plenty for normal
+enrollment volume, but worth knowing if you ever bulk-approve a huge batch.
